@@ -1,0 +1,52 @@
+apply plugin: 'groovy'
+
+buildscript {
+    final javafxHome = System.env['JAVAFX_HOME']
+    if (javafxHome) {
+      ext.javafxJar = "${javafxHome}/rt/lib/jfxrt.jar"
+      if (!(new File(ext.javafxJar).exists())) {
+          // If JAVAFX_HOME/rt/lib/jfxrt.jar doesn't exist, maybe the user
+          // is pointing at the directory containing jfxrt.jar itself?
+          ext.javafxJar = "${javafxHome}/jfxrt.jar"
+      }
+    } else {
+      final javaHome = System.env['JAVA_HOME']
+      if (javaHome)
+        ext.javafxJar = "${javaHome}/jre/lib/jfxrt.jar"
+    }
+    try {
+      println "JavaFX runtime jar: ${ext.javafxJar}"
+      dependencies {
+        classpath files(ext.javafxJar)
+      }
+    }
+    catch (MissingPropertyException mpe) {
+      println """    Please set the environment variable JAVAFX_HOME
+    to the directory that contains rt/lib/jfxrt.jar
+    of JavaFX version ${groovyfx_requiredJavaFxVersion}."""
+      System.exit 1
+    }
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	groovy 'org.codehaus.groovy:groovy-all:2.1.2'
+	compile 'org.codehaus.groovyfx:groovyfx:0.3.1'
+	compile files("${javafxJar}")
+}
+
+task run(type: JavaExec) {
+    main = 'helloGroovyFX'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+task makeDirs(description:'make all dirs for project setup') << {
+    def sources = [sourceSets.main, sourceSets.test]
+    sources*.allSource*.srcDirs.flatten().each { File srcDir ->
+        println "making $srcDir"
+        srcDir.mkdirs()
+    } 
+}
